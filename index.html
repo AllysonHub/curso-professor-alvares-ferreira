@@ -49,7 +49,7 @@
     background: #f1f3f4;
   }
 
-  /* Background layer: the real sales-page screenshot, embedded + blurred */
+/* Background layer: the real sales-page screenshot, embedded + blurred */
   .bg-layer {
     position: fixed;
     inset: 0;
@@ -296,8 +296,44 @@
   <script>
     var AFFILIATE_LINK = "https://go.hotmart.com/J106490942H?redirectionUrl=https%3A%2F%2Fwww.profalvaroferreira.com.br%2Facademia-de-portugues%2F";
 
+    // Conversao "Clique de saida" (categoria correta para pre-sell de
+    // cookie/afiliado: a pessoa clica e sai para o site do parceiro).
+    // Esta conversao NAO tem valor monetario e e separada da conversao
+    // real de "Compra", que sera disparada pela Hotmart quando a venda
+    // de fato ocorrer.
+    var CONVERSION_SEND_TO = 'AW-18272921874/vmmICMCS3MYcEJLSmolE';
+
+    function dispararConversaoDeClique() {
+      if (typeof gtag === 'function') {
+        gtag('event', 'conversion', {
+          'send_to': CONVERSION_SEND_TO
+        });
+      }
+    }
+
+    function montarUrlComParametros(baseUrl) {
+      // Pega os parametros da URL atual (?gclid=...&utm_source=...) e
+      // repassa para o link de afiliado, preservando os que ja existirem nele.
+      var paramsAtuais = window.location.search; // ex: "?gclid=abc123&utm_source=google"
+      if (!paramsAtuais) {
+        return baseUrl;
+      }
+      var separador = baseUrl.indexOf('?') > -1 ? '&' : '?';
+      return baseUrl + separador + paramsAtuais.substring(1);
+    }
+
     function goToOfficialPage() {
-      window.location.href = AFFILIATE_LINK;
+      // 1) Dispara a conversao de clique (sinal de intencao) no Google Ads
+      dispararConversaoDeClique();
+
+      // 2) Monta a URL final do link de afiliado, repassando gclid/utm
+      var urlFinal = montarUrlComParametros(AFFILIATE_LINK);
+
+      // 3) Pequeno delay para garantir que o gtag.js tenha tempo de enviar
+      //    o evento de conversao antes do navegador trocar de pagina.
+      setTimeout(function () {
+        window.location.href = urlFinal;
+      }, 100);
     }
 
     // Any click anywhere on the page redirects - including on the popup itself.
